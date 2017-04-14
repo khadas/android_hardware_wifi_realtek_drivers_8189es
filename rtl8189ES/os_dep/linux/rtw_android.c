@@ -750,7 +750,7 @@ int rtw_android_priv_cmd(struct net_device *net, struct ifreq *ifr, int cmd)
 		//bytes_written = wl_cfg80211_set_p2p_ps(net, command + skip, priv_cmd.total_len - skip);
 		break;
 		
-#ifdef CONFIG_IOCTL_CFG80211
+#if defined(CONFIG_IOCTL_CFG80211) && defined(CONFIG_AP)
 	case ANDROID_WIFI_CMD_SET_AP_WPS_P2P_IE:
 	{
 		int skip = strlen(android_wifi_cmd_str[ANDROID_WIFI_CMD_SET_AP_WPS_P2P_IE]) + 3;
@@ -835,6 +835,7 @@ int rtw_android_priv_cmd(struct net_device *net, struct ifreq *ifr, int cmd)
 #endif			
 		}		
 		break;
+#ifdef CONFIG_AP_MODE
 	case ANDROID_WIFI_CMD_HOSTAPD_SET_MACADDR_ACL:
 	{
 		padapter->stapriv.acl_list.mode = ( u8 ) get_int_from_command(command);
@@ -855,6 +856,7 @@ int rtw_android_priv_cmd(struct net_device *net, struct ifreq *ifr, int cmd)
 		rtw_acl_remove_sta(padapter, addr);
 		break;
 	}
+#endif /* CONFIG_AP_MODE */
 #if defined(CONFIG_GTK_OL) && (LINUX_VERSION_CODE < KERNEL_VERSION(3, 1, 0))
 	case ANDROID_WIFI_CMD_GTK_REKEY_OFFLOAD:
 		rtw_gtk_offload(net, (u8*)command);

@@ -220,13 +220,14 @@ struct sta_info {
 	//AP_Mode:
 	//curr_network(mlme_priv/security_priv/qos/ht) : AP CAP/INFO
 	//sta_info: (AP & STA) CAP/INFO
-		
+
+	unsigned int expire_to;
+	u8 bpairwise_key_installed;
 #ifdef CONFIG_AP_MODE
 
 	_list asoc_list;
 	_list auth_list;
-	 
-	unsigned int expire_to;
+
 	unsigned int auth_seq;
 	unsigned int authalg;
 	unsigned char chg_txt[128];
@@ -240,9 +241,6 @@ struct sta_info {
 	int wpa2_group_cipher;
 	int wpa_pairwise_cipher;
 	int wpa2_pairwise_cipher;	
-
-	u8 bpairwise_key_installed;
-
 #ifdef CONFIG_NATIVEAP_MLME
 	u8 wpa_ie[32];
 

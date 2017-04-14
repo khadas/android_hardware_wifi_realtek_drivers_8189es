@@ -26,6 +26,89 @@
 #error "CONFIG_SDIO_HCI shall be on!\n"
 #endif
 
+static void dump_sdio_f0(PADAPTER padapter)
+{
+	char str_out[128];
+	char str_val[8];
+	char *p = NULL;
+	int index = 0, i = 0;
+	u8 val8 = 0, len = 0;
+
+	DBG_871X("Dump SDIO f0:\n");
+	for (index = 0 ; index < 0x100 ; index += 16) {
+		p = &str_out[0];
+		len = snprintf(str_val, sizeof(str_val),
+			       "0x%02x: ", index);
+		strncpy(str_out, str_val, len);
+		p += len;
+
+		for (i = 0 ; i < 16 ; i++) {
+			len = snprintf(str_val, sizeof(str_val), "%02x ",
+				       rtw_sd_f0_read8(padapter, (index + i)));
+			strncpy(p, str_val, len);
+			p += len;
+		}
+		DBG_871X("%s\n", str_out);
+		_rtw_memset(&str_out, '\0', sizeof(str_out));
+	}
+
+}
+
+static void dump_sdio_local(PADAPTER padapter)
+{
+	char str_out[128];
+	char str_val[8];
+	char *p = NULL;
+	int index = 0, i = 0;
+	u8 val8 = 0, len = 0;
+
+	DBG_871X("Dump SDIO local register:\n");
+	for (index = 0 ; index < 0x100 ; index += 16) {
+		p = &str_out[0];
+		len = snprintf(str_val, sizeof(str_val),
+			       "0x%02x: ", index);
+		strncpy(str_out, str_val, len);
+		p += len;
+
+		for (i = 0 ; i < 16 ; i++) {
+			len = snprintf(str_val, sizeof(str_val), "%02x ",
+				       rtw_read8(padapter, (0x1025 << 16) | (index + i)));
+			strncpy(p, str_val, len);
+			p += len;
+		}
+		DBG_871X("%s\n", str_out);
+		_rtw_memset(&str_out, '\0', sizeof(str_out));
+	}
+}
+
+
+static void dump_mac_page0(PADAPTER padapter)
+{
+	char str_out[128];
+	char str_val[8];
+	char *p = NULL;
+	int index = 0, i = 0;
+	u8 val8 = 0, len = 0;
+
+	DBG_871X("Dump MAC Page0 register:\n");
+	for (index = 0 ; index < 0x100 ; index += 16) {
+		p = &str_out[0];
+		len = snprintf(str_val, sizeof(str_val),
+			       "0x%02x: ", index);
+		strncpy(str_out, str_val, len);
+		p += len;
+
+		for (i = 0 ; i < 16 ; i++) {
+			len = snprintf(str_val, sizeof(str_val), "%02x ",
+				       rtw_read8(padapter, index + i));
+			strncpy(p, str_val, len);
+			p += len;
+		}
+		DBG_871X("%s\n", str_out);
+		_rtw_memset(&str_out, '\0', sizeof(str_out));
+	}
+}
+
 /*
  * Description:
  *	Call this function to make sure power on successfully
@@ -96,20 +179,9 @@ static int PowerOnCheck(PADAPTER padapter)
 	}
 
 	if (ret == _FAIL) {
-		DBG_871X_LEVEL(_drv_err_, "Dump MAC Page0 register:\n");
-		/* Dump Page0 for check cystal*/
-		for (index = 0 ; index < 0xff ; index++) {
-			if(index%16==0)
-				printk("0x%02x ",index);
-
-			printk("%02x ", rtw_read8(padapter, index)); 
-
-			if(index%16==15)
-				printk("\n");
-			else if(index%8==7)
-				printk("\t");
-		}
-		printk("\n");
+		dump_sdio_f0(padapter);
+		dump_sdio_local(padapter);
+		dump_mac_page0(padapter);
 	}
 
 	return ret;

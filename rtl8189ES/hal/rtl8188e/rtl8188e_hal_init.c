@@ -1795,9 +1795,12 @@ Hal_EfuseWordEnableDataWrite(	IN	PADAPTER	pAdapter,
 		tmpaddr = start_addr;
 		efuse_OneByteWrite(pAdapter,start_addr++, data[0], bPseudoTest);
 		efuse_OneByteWrite(pAdapter,start_addr++, data[1], bPseudoTest);
+		PHY_SetMacReg(pAdapter, EFUSE_TEST, BIT26, 0);
 
 		efuse_OneByteRead(pAdapter,tmpaddr, &tmpdata[0], bPseudoTest);
 		efuse_OneByteRead(pAdapter,tmpaddr+1, &tmpdata[1], bPseudoTest);
+		PHY_SetMacReg(pAdapter, EFUSE_TEST, BIT26, 1);
+
 		if((data[0]!=tmpdata[0])||(data[1]!=tmpdata[1])){
 			badworden &= (~BIT0);
 		}
@@ -1807,9 +1810,12 @@ Hal_EfuseWordEnableDataWrite(	IN	PADAPTER	pAdapter,
 		tmpaddr = start_addr;
 		efuse_OneByteWrite(pAdapter,start_addr++, data[2], bPseudoTest);
 		efuse_OneByteWrite(pAdapter,start_addr++, data[3], bPseudoTest);
+		PHY_SetMacReg(pAdapter, EFUSE_TEST, BIT26, 0);
 
 		efuse_OneByteRead(pAdapter,tmpaddr    , &tmpdata[2], bPseudoTest);
 		efuse_OneByteRead(pAdapter,tmpaddr+1, &tmpdata[3], bPseudoTest);
+		PHY_SetMacReg(pAdapter, EFUSE_TEST, BIT26, 1);
+
 		if((data[2]!=tmpdata[2])||(data[3]!=tmpdata[3])){
 			badworden &=( ~BIT1);
 		}
@@ -1819,9 +1825,12 @@ Hal_EfuseWordEnableDataWrite(	IN	PADAPTER	pAdapter,
 		tmpaddr = start_addr;
 		efuse_OneByteWrite(pAdapter,start_addr++, data[4], bPseudoTest);
 		efuse_OneByteWrite(pAdapter,start_addr++, data[5], bPseudoTest);
+		PHY_SetMacReg(pAdapter, EFUSE_TEST, BIT26, 0);
 
 		efuse_OneByteRead(pAdapter,tmpaddr, &tmpdata[4], bPseudoTest);
 		efuse_OneByteRead(pAdapter,tmpaddr+1, &tmpdata[5], bPseudoTest);
+		PHY_SetMacReg(pAdapter, EFUSE_TEST, BIT26, 1);
+
 		if((data[4]!=tmpdata[4])||(data[5]!=tmpdata[5])){
 			badworden &=( ~BIT2);
 		}
@@ -1831,9 +1840,12 @@ Hal_EfuseWordEnableDataWrite(	IN	PADAPTER	pAdapter,
 		tmpaddr = start_addr;
 		efuse_OneByteWrite(pAdapter,start_addr++, data[6], bPseudoTest);
 		efuse_OneByteWrite(pAdapter,start_addr++, data[7], bPseudoTest);
+		PHY_SetMacReg(pAdapter, EFUSE_TEST, BIT26, 0);
 
 		efuse_OneByteRead(pAdapter,tmpaddr, &tmpdata[6], bPseudoTest);
 		efuse_OneByteRead(pAdapter,tmpaddr+1, &tmpdata[7], bPseudoTest);
+		PHY_SetMacReg(pAdapter, EFUSE_TEST, BIT26, 1);
+
 		if((data[6]!=tmpdata[6])||(data[7]!=tmpdata[7])){
 			badworden &=( ~BIT3);
 		}
@@ -2207,9 +2219,11 @@ hal_EfusePgPacketWrite2ByteHeader(
 		pg_header = ((pTargetPkt->offset & 0x07) << 5) | 0x0F;
 		//RTPRINT(FEEPROM, EFUSE_PG, ("pg_header = 0x%x\n", pg_header));
 		efuse_OneByteWrite(pAdapter, efuse_addr, pg_header, bPseudoTest);
+		PHY_SetMacReg(pAdapter, EFUSE_TEST, BIT26, 0);
 		efuse_OneByteRead(pAdapter, efuse_addr, &tmp_header, bPseudoTest);
+		PHY_SetMacReg(pAdapter, EFUSE_TEST, BIT26, 1);
 
-		while(tmp_header == 0xFF)
+		while(tmp_header == 0xFF || pg_header != tmp_header)
 		{
 			if(repeatcnt++ > EFUSE_REPEAT_THRESHOLD_)
 			{
@@ -2229,9 +2243,11 @@ hal_EfusePgPacketWrite2ByteHeader(
 			pg_header = ((pTargetPkt->offset & 0x78) << 1) | pTargetPkt->word_en;
 
 			efuse_OneByteWrite(pAdapter, efuse_addr, pg_header, bPseudoTest);
+			PHY_SetMacReg(pAdapter, EFUSE_TEST, BIT26, 0);
 			efuse_OneByteRead(pAdapter, efuse_addr, &tmp_header, bPseudoTest);
+			PHY_SetMacReg(pAdapter, EFUSE_TEST, BIT26, 1);
 
-			while(tmp_header == 0xFF)
+			while(tmp_header == 0xFF || pg_header != tmp_header)
 			{
 				if(repeatcnt++ > EFUSE_REPEAT_THRESHOLD_)
 				{
@@ -2300,9 +2316,12 @@ hal_EfusePgPacketWrite1ByteHeader(
 	pg_header = ((pTargetPkt->offset << 4) & 0xf0) |pTargetPkt->word_en;
 
 	efuse_OneByteWrite(pAdapter, efuse_addr, pg_header, bPseudoTest);
-	efuse_OneByteRead(pAdapter, efuse_addr, &tmp_header, bPseudoTest);
+	PHY_SetMacReg(pAdapter, EFUSE_TEST, BIT26, 0);
 
-	while(tmp_header == 0xFF)
+	efuse_OneByteRead(pAdapter, efuse_addr, &tmp_header, bPseudoTest);
+	PHY_SetMacReg(pAdapter, EFUSE_TEST, BIT26, 1);
+
+	while(tmp_header == 0xFF || pg_header != tmp_header)
 	{
 		if(repeatcnt++ > EFUSE_REPEAT_THRESHOLD_)
 		{
@@ -3827,16 +3846,21 @@ static void hw_var_set_opmode(PADAPTER Adapter, u8 variable, u8* val)
 {
 	u8	val8;
 	u8	mode = *((u8 *)val);
+	static u8 isMonitor = _FALSE;
 
 	HAL_DATA_TYPE *pHalData = GET_HAL_DATA(Adapter);
 
-	/* reset RCR */
-	rtw_write32(Adapter, REG_RCR, pHalData->ReceiveConfig);
+	if (isMonitor == _TRUE) {
+		/* reset RCR */
+		rtw_write32(Adapter, REG_RCR, pHalData->ReceiveConfig);
+		isMonitor = _FALSE;
+	}
 
 	DBG_871X( ADPT_FMT "Port-%d  set opmode = %d\n",ADPT_ARG(Adapter),
 		get_iface_type(Adapter), mode);
 	
 	if (mode == _HW_STATE_MONITOR_) {
+		isMonitor = _TRUE;
 		/* set net_type */
 		Set_MSR(Adapter, _HW_STATE_NOLINK_);
 

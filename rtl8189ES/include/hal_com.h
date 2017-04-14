@@ -176,7 +176,8 @@
 
 enum{
 	UP_LINK,
-	DOWN_LINK,	
+	DOWN_LINK,
+	BI_LINK,
 };
 typedef enum _RT_MEDIA_STATUS {
 	RT_MEDIA_DISCONNECT = 0,

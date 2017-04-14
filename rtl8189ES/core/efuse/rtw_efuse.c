@@ -512,6 +512,7 @@ efuse_OneByteWrite(
 		return bResult;
 	}
 
+	Efuse_PowerSwitch(pAdapter, _TRUE, _TRUE);
 
 	// -----------------e-fuse reg ctrl ---------------------------------	
 	//address			
@@ -562,6 +563,8 @@ efuse_OneByteWrite(
 		) {
 		PHY_SetMacReg(pAdapter, EFUSE_TEST, BIT(11), 0);
 	}
+
+	Efuse_PowerSwitch(pAdapter, _TRUE, _FALSE);
 
 	return bResult;
 }
@@ -929,7 +932,7 @@ efuse_IsMasked(
 //------------------------------------------------------------------------------
 u8 rtw_efuse_map_write(PADAPTER padapter, u16 addr, u16 cnts, u8 *data)
 {
-#define RT_ASSERT_RET(expr)												\
+#define RT_EFUSE_ASSERT_RET(expr)												\
 	if(!(expr)) {															\
 		printk( "Assertion failed! %s at ......\n", #expr);							\
 		printk( "      ......%s,%s,line=%d\n",__FILE__,__FUNCTION__,__LINE__);	\
@@ -949,8 +952,8 @@ u8 rtw_efuse_map_write(PADAPTER padapter, u16 addr, u16 cnts, u8 *data)
 	if ((addr + cnts) > mapLen)
 		return _FAIL;
 
-	RT_ASSERT_RET(PGPKT_DATA_SIZE == 8); // have to be 8 byte alignment
-	RT_ASSERT_RET((mapLen & 0x7) == 0); // have to be PGPKT_DATA_SIZE alignment for memcpy
+	RT_EFUSE_ASSERT_RET(PGPKT_DATA_SIZE == 8); // have to be 8 byte alignment
+	RT_EFUSE_ASSERT_RET((mapLen & 0x7) == 0); // have to be PGPKT_DATA_SIZE alignment for memcpy
 
 	map = rtw_zmalloc(mapLen);
 	if(map == NULL){
@@ -979,7 +982,7 @@ u8 rtw_efuse_map_write(PADAPTER padapter, u16 addr, u16 cnts, u8 *data)
 			DBG_8192C("%s , data[%d] = %x, map[addr+i]= %x\n", __func__, i, data[i], map[addr+i]);
 		}
 	}
-	Efuse_PowerSwitch(padapter, _TRUE, _TRUE);
+	/*Efuse_PowerSwitch(padapter, _TRUE, _TRUE);*/
 
 	idx = 0;
 	offset = (addr >> 3);
@@ -1025,7 +1028,7 @@ u8 rtw_efuse_map_write(PADAPTER padapter, u16 addr, u16 cnts, u8 *data)
 		offset++;
 	}
 
-	Efuse_PowerSwitch(padapter, _TRUE, _FALSE);
+	/*Efuse_PowerSwitch(padapter, _TRUE, _FALSE);*/
 
 exit:
 
@@ -1065,7 +1068,7 @@ u8 rtw_efuse_mask_map_read(PADAPTER padapter, u16 addr, u16 cnts, u8 *data)
 
 u8 rtw_BT_efuse_map_write(PADAPTER padapter, u16 addr, u16 cnts, u8 *data)
 {
-#define RT_ASSERT_RET(expr)												\
+#define RT_EFUSE_ASSERT_RET(expr)												\
 	if(!(expr)) {															\
 		printk( "Assertion failed! %s at ......\n", #expr);							\
 		printk( "      ......%s,%s,line=%d\n",__FILE__,__FUNCTION__,__LINE__);	\
@@ -1084,8 +1087,8 @@ u8 rtw_BT_efuse_map_write(PADAPTER padapter, u16 addr, u16 cnts, u8 *data)
 	if ((addr + cnts) > mapLen)
 		return _FAIL;
 
-	RT_ASSERT_RET(PGPKT_DATA_SIZE == 8); // have to be 8 byte alignment
-	RT_ASSERT_RET((mapLen & 0x7) == 0); // have to be PGPKT_DATA_SIZE alignment for memcpy
+	RT_EFUSE_ASSERT_RET(PGPKT_DATA_SIZE == 8); // have to be 8 byte alignment
+	RT_EFUSE_ASSERT_RET((mapLen & 0x7) == 0); // have to be PGPKT_DATA_SIZE alignment for memcpy
 
 	map = rtw_zmalloc(mapLen);
 	if(map == NULL){

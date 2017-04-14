@@ -1457,7 +1457,7 @@ static void rtw_hal_fw_sync_cam_id(_adapter *adapter)
 					__func__, cam_id, index);
 		} else {
 			read_cam(adapter ,cam_id, get_key);
-			algorithm = psecuritypriv->dot11PrivacyAlgrthm;
+			algorithm = psecuritypriv->dot118021XGrpPrivacy;
 			ctrl = BIT(15) | BIT6 |(algorithm << 2) | index;
 			write_cam(adapter, index, ctrl, addr, get_key);
 			ctrl = 0;
@@ -1494,15 +1494,13 @@ static void rtw_hal_update_gtk_offload_info(_adapter *adapter)
 	algorithm = psecuritypriv->dot11PrivacyAlgrthm;
 
 	if(psecuritypriv->binstallKCK_KEK == _TRUE) {
-
 		//read gtk key index
 		gtk_keyindex = rtw_read8(adapter, 0x48c);
 		do{
 			//chech if GK
-			if(read_phy_cam_is_gtk(adapter, defualt_cam_id) == _TRUE)
-			{
+			if(read_phy_cam_is_gtk(adapter, defualt_cam_id) == _TRUE) {
 				read_cam(adapter ,defualt_cam_id, get_key);
-				algorithm = psecuritypriv->dot11PrivacyAlgrthm;
+				algorithm = psecuritypriv->dot118021XGrpPrivacy;
 				//in defualt cam entry, cam id = key id
 				ctrl = BIT(15) | BIT6 |(algorithm << 2) | defualt_cam_id;
 				write_cam(adapter, cam_id, ctrl, addr, get_key);
@@ -1513,9 +1511,7 @@ static void rtw_hal_update_gtk_offload_info(_adapter *adapter)
 
 			if (gtk_keyindex < 4 &&(defualt_cam_id == gtk_keyindex)) {
 				psecuritypriv->dot118021XGrpKeyid = gtk_keyindex;
-				_rtw_memcpy(psecuritypriv->dot118021XGrpKey[psecuritypriv->dot118021XGrpKeyid].skey,
-						get_key, 16);
-
+				_rtw_memcpy(psecuritypriv->dot118021XGrpKey[psecuritypriv->dot118021XGrpKeyid].skey, get_key, 16);
 				DBG_871X_LEVEL(_drv_always_, "GTK (%d) = 0x%08x, 0x%08x, 0x%08x, 0x%08x\n",
 						gtk_keyindex,
 				psecuritypriv->dot118021XGrpKey[psecuritypriv->dot118021XGrpKeyid].lkey[0], 
@@ -1527,6 +1523,7 @@ static void rtw_hal_update_gtk_offload_info(_adapter *adapter)
 		}while(defualt_cam_id < 4);
 
 		rtw_write8(adapter, REG_SECCFG, 0x0c);
+
 #ifdef CONFIG_GTK_OL_DBG
 		//if (gtk_keyindex != 5)
 		dump_cam_table(adapter);
@@ -1700,7 +1697,8 @@ static u8 rtw_hal_set_remote_wake_ctrl_cmd(_adapter *adapter, u8 enable)
 				u1H2CRemoteWakeCtrlParm, 1);
 #ifdef CONFIG_GTK_OL
 		if (psecuritypriv->binstallKCK_KEK == _TRUE &&
-				psecuritypriv->dot11PrivacyAlgrthm == _AES_) {
+			psecuritypriv->dot11PrivacyAlgrthm == _AES_ &&
+			psecuritypriv->dot118021XGrpPrivacy == _AES_) {
 			SET_H2CCMD_REMOTE_WAKE_CTRL_GTK_OFFLOAD_EN(
 					u1H2CRemoteWakeCtrlParm, 1);
 		} else {
@@ -4925,7 +4923,8 @@ static void rtw_hal_wow_enable(_adapter *adapter)
 	DBG_871X_LEVEL(_drv_always_, "%s, WOWLAN_ENABLE\n", __func__);
 	rtw_hal_gate_bb(adapter, _TRUE);
 #ifdef CONFIG_GTK_OL
-	if (psecuritypriv->dot11PrivacyAlgrthm == _AES_)
+	if (psecuritypriv->dot11PrivacyAlgrthm == _AES_ &&
+		psecuritypriv->dot118021XGrpPrivacy == _AES_)
 		rtw_hal_fw_sync_cam_id(adapter);
 #endif
 	if (IS_HARDWARE_TYPE_8723B(adapter))
@@ -5067,7 +5066,8 @@ static void rtw_hal_wow_disable(_adapter *adapter)
 	rtw_hal_update_tx_iv(adapter);
 
 #ifdef CONFIG_GTK_OL
-	if (psecuritypriv->dot11PrivacyAlgrthm == _AES_)
+	if (psecuritypriv->dot11PrivacyAlgrthm == _AES_ &&
+	    psecuritypriv->dot118021XGrpPrivacy == _AES_)
 		rtw_hal_update_gtk_offload_info(adapter);
 #endif /*CONFIG_GTK_OL*/
 

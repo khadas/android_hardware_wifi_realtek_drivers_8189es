@@ -22,6 +22,34 @@
 
 //#define SDIO_DEBUG_IO 1
 
+
+#ifdef WLAND_RDAPLATFORM_SUPPORT
+static u32 convert_rda_data_length(u32 len)
+{
+	u32 block_size = 512;
+	u32 count = 0, remind_size = 0, new_len = 1;
+	
+	if (len < block_size) {
+		if (len < 3) {
+			new_len = 4;
+		} else {
+			do {
+				new_len = new_len << 1;
+				len = len >> 1;
+			} while (len);
+		}
+	} else if (len >= block_size) {
+		count = (len / block_size);
+		if (len % block_size)
+			new_len = (count + 1) * block_size;
+		else
+			new_len = count * block_size;
+	}
+
+	return new_len;
+}
+#endif
+
 #ifdef CONFIG_EXT_CLK
 void EnableGpio5ClockReq(PADAPTER Adapter, u8 in_interrupt, u32 Enable);
 #endif //CONFIG_EXT_CLK
@@ -688,10 +716,13 @@ static u32 sdio_read_port(
 
 	HalSdioGetCmdAddr8723ASdio(padapter, addr, pHalData->SdioRxFIFOCnt++, &addr);
 
-
+#ifdef WLAND_RDAPLATFORM_SUPPORT
+	cnt = convert_rda_data_length(cnt);
+#else
 	cnt = _RND4(cnt);
 	if (cnt > psdio->block_transfer_len)
 		cnt = _RND(cnt, psdio->block_transfer_len);
+#endif
 	
 //	cnt = sdio_align_size(cnt);
 
@@ -744,6 +775,10 @@ static u32 sdio_write_port(
 
 	if (cnt > psdio->block_transfer_len)
 		cnt = _RND(cnt, psdio->block_transfer_len);
+
+#ifdef WLAND_RDAPLATFORM_SUPPORT
+	cnt = convert_rda_data_length(cnt);
+#endif
 //	cnt = sdio_align_size(cnt);
 
 	err = sd_write(pintfhdl, addr, cnt, xmitbuf->pdata);
@@ -1809,12 +1844,21 @@ void sd_int_dpc(PADAPTER padapter)
 
 void sd_int_hdl(PADAPTER padapter)
 {
+#ifdef WLAND_RDAPLATFORM_SUPPORT
+	u8 data[8];
+#else
 	u8 data[6];
+#endif
 	HAL_DATA_TYPE	*pHalData = GET_HAL_DATA(padapter);
 	if (RTW_CANNOT_RUN(padapter))
 		return;
 
+#ifdef WLAND_RDAPLATFORM_SUPPORT
+	_sdio_local_read(padapter, SDIO_REG_HISR, 8, data);
+#else
 	_sdio_local_read(padapter, SDIO_REG_HISR, 6, data);
+#endif
+
 	pHalData->sdio_hisr = le32_to_cpu(*(u32*)data);
 	pHalData->SdioRxFIFOSize = le16_to_cpu(*(u16*)&data[4]);
 

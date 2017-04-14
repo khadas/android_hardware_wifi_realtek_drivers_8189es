@@ -408,7 +408,7 @@ void rtw_hal_update_ra_mask(struct sta_info *psta, u8 rssi_level)
 	padapter = psta->padapter;
 
 	pmlmepriv = &(padapter->mlmepriv);
-	
+#ifdef CONFIG_AP_MODE
 	if(check_fwstate(pmlmepriv, WIFI_AP_STATE) == _TRUE)
 	{
 		add_RATid(padapter, psta, rssi_level);
@@ -417,6 +417,9 @@ void rtw_hal_update_ra_mask(struct sta_info *psta, u8 rssi_level)
 	{
 		padapter->HalFunc.UpdateRAMaskHandler(padapter, psta->mac_id, rssi_level);
 	}
+#else
+	padapter->HalFunc.UpdateRAMaskHandler(padapter, psta->mac_id, rssi_level);
+#endif
 }
 
 void	rtw_hal_add_ra_tid(_adapter *padapter, u64 bitmap, u8 *arg, u8 rssi_level)

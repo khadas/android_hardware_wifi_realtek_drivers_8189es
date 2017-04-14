@@ -569,7 +569,10 @@ _adapter *rtw_sdio_if1_init(struct dvobj_priv *dvobj)
 	//3 8. get WLan MAC address
 	// set mac addr
 	rtw_macaddr_cfg(adapter_mac_addr(padapter),  get_hal_mac_addr(padapter));
-	rtw_init_wifidirect_addrs(padapter, adapter_mac_addr(padapter), adapter_mac_addr(padapter));
+#ifdef CONFIG_P2P
+	rtw_init_wifidirect_addrs(padapter, adapter_mac_addr(padapter),
+				  adapter_mac_addr(padapter));
+#endif
 
 	rtw_hal_disable_interrupt(padapter);
 

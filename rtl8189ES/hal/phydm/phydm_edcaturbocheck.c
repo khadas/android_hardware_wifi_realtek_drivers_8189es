@@ -112,7 +112,8 @@ odm_EdcaTurboCheckCE(
 	PDM_ODM_T		pDM_Odm = (PDM_ODM_T)pDM_VOID;
 	PADAPTER		       Adapter = pDM_Odm->Adapter;
 	u32	EDCA_BE_UL = 0x5ea42b;//Parameter suggested by Scott  //edca_setting_UL[pMgntInfo->IOTPeer];
-	u32	EDCA_BE_DL = 0x5ea42b;//Parameter suggested by Scott  //edca_setting_DL[pMgntInfo->IOTPeer];
+	u32	EDCA_BE_DL = 0x00a42b;//Parameter suggested by Scott  //edca_setting_DL[pMgntInfo->IOTPeer];
+	u32	EDCA_BE_BI = 0x5ea42b;
 	u32	ICType=pDM_Odm->SupportICType;
 	u32	IOTPeer=0;
 	u8	WirelessMode=0xFF;                   //invalid value
@@ -170,13 +171,14 @@ odm_EdcaTurboCheckCE(
 		//traffic, TX or RX
 		if(bBiasOnRx)
 		{
-			if (cur_tx_bytes > (cur_rx_bytes << 2))
-			{ // Uplink TP is present.
+			if (cur_tx_bytes > (cur_rx_bytes << 2)) {
+				// Uplink TP is present.
 				trafficIndex = UP_LINK; 
-			}
-			else
-			{ // Balance TP is present.
+			} else if (cur_rx_bytes > (cur_tx_bytes << 2)) { 
+				// Balance TP is present.
 				trafficIndex = DOWN_LINK;
+			} else {
+				trafficIndex = BI_LINK;
 			}
 		}
 		else
@@ -239,7 +241,7 @@ odm_EdcaTurboCheckCE(
 			else if(IOTPeer == HT_IOT_PEER_ATHEROS)
 			{
 				// Set DL EDCA for Atheros peer to 0x3ea42b. Suggested by SD3 Wilson for ASUS TP issue. 
-				EDCA_BE_DL = edca_setting_DL[IOTPeer];
+				EDCA_BE_DL = 0x00a42b;
 			}
 
 			if((ICType==ODM_RTL8812)||(ICType==ODM_RTL8821)||(ICType==ODM_RTL8192E))           //add 8812AU/8812AE
@@ -252,8 +254,10 @@ odm_EdcaTurboCheckCE(
 
 			if (trafficIndex == DOWN_LINK)
 				edca_param = EDCA_BE_DL;
-			else
+			else if (trafficIndex == UP_LINK)
 				edca_param = EDCA_BE_UL;
+			else
+				edca_param = EDCA_BE_BI;
 
 			rtw_write32(Adapter, REG_EDCA_BE_PARAM, edca_param);
 

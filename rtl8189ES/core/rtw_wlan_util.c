@@ -3334,12 +3334,18 @@ void update_wireless_mode(_adapter *padapter)
 	rtw_hal_set_hwreg( padapter, HW_VAR_RESP_SIFS,  (u8 *)&SIFS_Timer);
 
 	rtw_hal_set_hwreg( padapter, HW_VAR_WIRELESS_MODE,  (u8 *)&(pmlmeext->cur_wireless_mode));
-
+#ifdef CONFIG_P2P
 	if ((pmlmeext->cur_wireless_mode & WIRELESS_11B)
 		&& rtw_p2p_chk_state(pwdinfo, P2P_STATE_NONE))
 		update_mgnt_tx_rate(padapter, IEEE80211_CCK_RATE_1MB);
 	else
 		update_mgnt_tx_rate(padapter, IEEE80211_OFDM_RATE_6MB);
+#else
+	if ((pmlmeext->cur_wireless_mode & WIRELESS_11B))
+		update_mgnt_tx_rate(padapter, IEEE80211_CCK_RATE_1MB);
+	else
+		update_mgnt_tx_rate(padapter, IEEE80211_OFDM_RATE_6MB);
+#endif /*CONFIG_P2P*/
 }
 
 void fire_write_MAC_cmd(_adapter *padapter, unsigned int addr, unsigned int value);

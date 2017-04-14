@@ -1333,6 +1333,42 @@ inline u8 rtw_change_bss_chbw_cmd(_adapter *adapter, int flags, u8 req_ch, u8 re
 	);
 }
 
+#ifdef CONFIG_IOCTL_CFG80211
+u8 rtw_start_connect_cmd(_adapter *padapter,
+			 struct cfg80211_connect_params *param)
+{
+	u8 res = _SUCCESS;
+	struct cmd_obj	*pcmd;
+	struct cmd_priv	*pcmdpriv = &padapter->cmdpriv;
+
+	DBG_871X("%s: ====>\n", __func__);
+	if (param == NULL) {
+		res = _FAIL;
+		DBG_871X("%s: NULL paramater!!\n", __func__);
+		goto _exit;
+	}
+
+	pcmd = (struct cmd_obj*)rtw_zmalloc(sizeof(struct cmd_obj));
+
+	if (pcmd == NULL) {
+		res = _FAIL;
+		DBG_871X("%s: alloc pcmd object fail\n", __func__);
+		if (param) {
+			rtw_mfree((u8 *)param,
+				  sizeof(struct cfg80211_connect_params));
+		}
+		goto _exit;
+	}
+
+	init_h2fwcmd_w_parm_no_rsp(pcmd, param, _start_connect_CMD_);
+	res = rtw_enqueue_cmd(pcmdpriv, pcmd);
+
+	DBG_871X("%s: <=====\n", __func__);
+_exit:
+	return res;
+}
+#endif
+
 u8 rtw_joinbss_cmd(_adapter  *padapter, struct wlan_network* pnetwork)
 {
 	u8	*auth, res = _SUCCESS;
@@ -3034,7 +3070,7 @@ void power_saving_wk_hdl(_adapter *padapter)
 //add for CONFIG_IEEE80211W, none 11w can use it
 void reset_securitypriv_hdl(_adapter *padapter)
 {
-	 rtw_reset_securitypriv(padapter);
+	rtw_reset_securitypriv(padapter);
 }
 
 void free_assoc_resources_hdl(_adapter *padapter)
@@ -3976,6 +4012,28 @@ exit:
 _func_exit_;	
 }
 
+void rtw_start_connect_cmd_callback(_adapter* padapter, struct cmd_obj *pcmd)
+{
+	struct	mlme_priv *pmlmepriv = &padapter->mlmepriv;
+
+_func_enter_;	
+
+	if (pcmd->res == H2C_DROPPED) {
+		DBG_871X("%s: cmd dropped!\n", __func__);
+	} else if(pcmd->res != H2C_SUCCESS) {
+		DBG_871X("%s: cmd fail\n", __func__);
+	}
+
+	DBG_871X("%s: free cmd obj\n", __func__);
+	rtw_free_cmd_obj(pcmd);
+
+	if (padapter->mlmepriv.not_indic_disco == _TRUE)
+		padapter->mlmepriv.not_indic_disco = _FALSE;
+
+	rtw_ps_deny_cancel(padapter, PS_DENY_JOIN);
+
+_func_exit_;
+}
 
 void rtw_joinbss_cmd_callback(_adapter*	padapter,  struct cmd_obj *pcmd)
 {

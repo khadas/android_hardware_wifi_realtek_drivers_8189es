@@ -1026,6 +1026,9 @@ u8 write_rfreg_hdl(_adapter *padapter, u8 *pbuf);
 
 
 u8 NULL_hdl(_adapter *padapter, u8 *pbuf);
+#ifdef CONFIG_IOCTL_CFG80211
+u8 start_connect_cmd_hdl(_adapter *padapter, u8 *pbuf);
+#endif
 u8 join_cmd_hdl(_adapter *padapter, u8 *pbuf);
 u8 disconnect_hdl(_adapter *padapter, u8 *pbuf);
 u8 createbss_hdl(_adapter *padapter, u8 *pbuf);
@@ -1125,6 +1128,9 @@ struct cmd_hdl wlancmds[] =
 	GEN_MLME_EXT_HANDLER(sizeof(struct TDLSoption_param), tdls_hdl) /*62*/
 	GEN_MLME_EXT_HANDLER(0, chk_bmc_sleepq_hdl) /*63*/
 	GEN_MLME_EXT_HANDLER(sizeof(struct RunInThread_param), run_in_thread_hdl) /*64*/
+#ifdef CONFIG_IOCTL_CFG80211
+	GEN_MLME_EXT_HANDLER(sizeof(struct cfg80211_connect_params), start_connect_cmd_hdl) /*65*/
+#endif
 };
 
 #endif

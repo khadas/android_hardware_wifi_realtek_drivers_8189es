@@ -133,6 +133,10 @@
 	#define CONFIG_IEEE80211_BAND_5GHZ
 #endif
 
+#ifdef CONFIG_AP_MODE
+	#define CONFIG_ADHOC_MODE
+#endif
+
 /*#define CONFIG_WEXT_DONT_JOIN_BYSSID	*/
 //#include <rtl871x_byteorder.h>
 

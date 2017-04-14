@@ -587,7 +587,19 @@ struct mlme_priv {
 
 	u8 ext_capab_ie_data[8];/*currently for ap mode only*/
 	u8 ext_capab_ie_len; 
-	
+
+	u8 *assoc_req;
+	u32 assoc_req_len;
+	u8 *assoc_rsp;
+	u32 assoc_rsp_len;
+
+#ifdef CONFIG_P2P
+	u8 *p2p_probe_req_ie;
+	u8 *p2p_assoc_req_ie;
+	u32 p2p_probe_req_ie_len;
+	u32 p2p_assoc_req_ie_len;
+#endif
+
 #if defined (CONFIG_AP_MODE) && defined (CONFIG_NATIVEAP_MLME)
 	/* Number of associated Non-ERP stations (i.e., stations using 802.11b
 	 * in 802.11g BSS) */
@@ -623,11 +635,6 @@ struct mlme_priv {
 	u8 sw_to_20mhz; /*switch to 20Mhz BW*/
 #endif /* CONFIG_80211N_HT */	
 
-	u8 *assoc_req;
-	u32 assoc_req_len;
-	u8 *assoc_rsp;
-	u32 assoc_rsp_len;
-
 	u8 *wps_beacon_ie;	
 	//u8 *wps_probe_req_ie;
 	u8 *wps_probe_resp_ie;
@@ -639,16 +646,12 @@ struct mlme_priv {
 	u32 wps_assoc_resp_ie_len; // for CONFIG_IOCTL_CFG80211, this IE len could include p2p ie / wfd ie
 	
 	u8 *p2p_beacon_ie;
-	u8 *p2p_probe_req_ie;
 	u8 *p2p_probe_resp_ie;	
 	u8 *p2p_go_probe_resp_ie; //for GO	
-	u8 *p2p_assoc_req_ie;
 
 	u32 p2p_beacon_ie_len;
-	u32 p2p_probe_req_ie_len;
 	u32 p2p_probe_resp_ie_len;
 	u32 p2p_go_probe_resp_ie_len; //for GO
-	u32 p2p_assoc_req_ie_len;
 /*
 #if defined(CONFIG_P2P) && defined(CONFIG_IOCTL_CFG80211)
 	//u8 *wps_p2p_beacon_ie;

@@ -85,14 +85,22 @@
 		#define CONFIG_HOSTAPD_MLME
 	#endif
 	//#define CONFIG_FIND_BEST_CHANNEL
+	#define CONFIG_TX_MCAST2UNI		// Support IP multicast->unicast
 #endif
 
-#define CONFIG_TX_MCAST2UNI		// Support IP multicast->unicast
 //#define CONFIG_CHECK_AC_LIFETIME 	// Check packet lifetime of 4 ACs.
 
 #define CONFIG_P2P
+
+#ifndef CONFIG_AP_MODE
+#undef CONFIG_P2P
+#endif
+
 #ifdef CONFIG_P2P
 	//The CONFIG_WFD is for supporting the Wi-Fi display
+	#ifndef CONFIG_AP_MODE
+	#define CONFIG_AP_MODE
+	#endif
 	#define CONFIG_WFD
 
 	#define CONFIG_P2P_REMOVE_GROUP_INFO
@@ -141,7 +149,7 @@
 #define CONFIG_TX_AGGREGATION
 //#define CONFIG_SDIO_TX_TASKLET
 #define CONFIG_SDIO_RX_COPY
-#define CONFIG_SDIO_TX_ENABLE_AVAL_INT
+/* #define CONFIG_SDIO_TX_ENABLE_AVAL_INT */
 
 /*
  * Others
