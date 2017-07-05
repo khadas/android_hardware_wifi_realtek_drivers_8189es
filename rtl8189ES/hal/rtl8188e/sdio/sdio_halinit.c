@@ -1084,8 +1084,13 @@ void _InitBeaconParameters(PADAPTER padapter)
 
 	rtw_write16(padapter, REG_BCN_CTRL, 0x1010);
 
-	// TODO: Remove these magic number
-	rtw_write16(padapter, REG_TBTT_PROHIBIT, 0x6404);// ms
+	/* setup time:128 us */
+	rtw_write8(padapter, REG_TBTT_PROHIBIT, 0x04);
+
+	/*TBTT hold time :4ms */
+	rtw_write16(padapter, REG_TBTT_PROHIBIT + 1,
+		(rtw_read16(padapter, REG_TBTT_PROHIBIT + 1) & (~0xfff)) | (TBTT_PROBIHIT_HOLD_TIME));
+
 	rtw_write8(padapter, REG_DRVERLYINT, DRIVER_EARLY_INT_TIME_8188E);//ms
 	rtw_write8(padapter, REG_BCNDMATIM, BCN_DMA_ATIME_INT_TIME_8188E);
 
@@ -1097,7 +1102,6 @@ void _InitBeaconParameters(PADAPTER padapter)
 	pHalData->RegBcnCtrlVal = rtw_read8(padapter, REG_BCN_CTRL);
 	pHalData->RegTxPause = rtw_read8(padapter, REG_TXPAUSE); 
 	pHalData->RegFwHwTxQCtrl = rtw_read8(padapter, REG_FWHW_TXQ_CTRL+2);
-	pHalData->RegReg542 = rtw_read8(padapter, REG_TBTT_PROHIBIT+2);
 	pHalData->RegCR_1 = rtw_read8(padapter, REG_CR+1);
 	
 }

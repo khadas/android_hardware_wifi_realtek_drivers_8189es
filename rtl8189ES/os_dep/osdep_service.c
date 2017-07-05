@@ -1086,7 +1086,57 @@ u32 _rtw_down_sema(_sema *sema)
 #endif
 }
 
+inline void thread_exit(_completion *comp)
+{
+#ifdef PLATFORM_LINUX
+	complete_and_exit(comp, 0);
+#endif
 
+#ifdef PLATFORM_FREEBSD
+	printf("%s", "RTKTHREAD_exit");
+#endif
+
+#ifdef PLATFORM_OS_CE
+	ExitThread(STATUS_SUCCESS);
+#endif
+
+#ifdef PLATFORM_OS_XP
+	PsTerminateSystemThread(STATUS_SUCCESS);
+#endif
+}
+
+inline void _rtw_init_completion(_completion *comp)
+{
+#ifdef PLATFORM_LINUX
+	init_completion(comp);
+#endif
+}
+inline void _rtw_wait_for_comp_timeout(_completion *comp)
+{
+#ifdef PLATFORM_LINUX
+	wait_for_completion_timeout(comp, msecs_to_jiffies(3000));
+#endif
+}
+inline void _rtw_wait_for_comp(_completion *comp)
+{
+#ifdef PLATFORM_LINUX
+	wait_for_completion(comp);
+#endif
+}
+
+inline bool rtw_thread_stop(_thread_hdl_ th)
+{
+#ifdef PLATFORM_LINUX
+	return kthread_stop(th);
+#endif
+}
+
+inline bool rtw_thread_should_stop(void)
+{
+#ifdef PLATFORM_LINUX
+	return kthread_should_stop();
+#endif
+}
 
 void	_rtw_mutex_init(_mutex *pmutex)
 {

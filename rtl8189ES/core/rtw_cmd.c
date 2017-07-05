@@ -34,9 +34,10 @@ sint	_rtw_init_cmd_priv (struct	cmd_priv *pcmdpriv)
 _func_enter_;	
 
 	_rtw_init_sema(&(pcmdpriv->cmd_queue_sema), 0);
-	//_rtw_init_sema(&(pcmdpriv->cmd_done_sema), 0);
-	_rtw_init_sema(&(pcmdpriv->terminate_cmdthread_sema), 0);
-	
+	/* _rtw_init_sema(&(pcmdpriv->cmd_done_sema), 0); */
+	/* _rtw_init_sema(&(pcmdpriv->terminate_cmdthread_sema), 0); */
+	_rtw_init_sema(&(pcmdpriv->start_cmdthread_sema), 0);
+	_rtw_init_completion(&pcmdpriv->cmdthread_comp);
 	
 	_rtw_init_queue(&(pcmdpriv->cmd_queue));
 	
@@ -187,8 +188,9 @@ _func_enter_;
 	if(pcmdpriv){
 		_rtw_spinlock_free(&(pcmdpriv->cmd_queue.lock));
 		_rtw_free_sema(&(pcmdpriv->cmd_queue_sema));
-		//_rtw_free_sema(&(pcmdpriv->cmd_done_sema));
-		_rtw_free_sema(&(pcmdpriv->terminate_cmdthread_sema));
+		/* _rtw_free_sema(&(pcmdpriv->cmd_done_sema)); */
+		/* _rtw_free_sema(&(pcmdpriv->terminate_cmdthread_sema)); */
+		_rtw_free_sema(&(pcmdpriv->start_cmdthread_sema));
 
 		if (pcmdpriv->cmd_allocated_buf)
 			rtw_mfree(pcmdpriv->cmd_allocated_buf, MAX_CMDSZ + CMDBUFF_ALIGN_SZ);
@@ -519,7 +521,8 @@ void rtw_stop_cmd_thread(_adapter *adapter)
 	{
 		adapter->cmdpriv.stop_req = 1;
 		_rtw_up_sema(&adapter->cmdpriv.cmd_queue_sema);
-		_rtw_down_sema(&adapter->cmdpriv.terminate_cmdthread_sema);
+		/* _rtw_down_sema(&adapter->cmdpriv.terminate_cmdthread_sema); */
+		rtw_wait_for_thread_stop(&adapter->cmdpriv.cmdthread_comp);
 	}
 }
 
@@ -545,7 +548,8 @@ _func_enter_;
 
 	pcmdpriv->stop_req = 0;
 	ATOMIC_SET(&(pcmdpriv->cmdthd_running), _TRUE);
-	_rtw_up_sema(&pcmdpriv->terminate_cmdthread_sema);
+	/* _rtw_up_sema(&pcmdpriv->terminate_cmdthread_sema); */
+	_rtw_up_sema(&pcmdpriv->start_cmdthread_sema);
 
 	RT_TRACE(_module_rtl871x_cmd_c_,_drv_info_,("start r871x rtw_cmd_thread !!!!\n"));
 
@@ -727,12 +731,13 @@ post_process:
 		rtw_free_cmd_obj(pcmd);	
 	}while(1);
 
-	_rtw_up_sema(&pcmdpriv->terminate_cmdthread_sema);
+	/* _rtw_up_sema(&pcmdpriv->terminate_cmdthread_sema); */
 	ATOMIC_SET(&(pcmdpriv->cmdthd_running), _FALSE);
 
 _func_exit_;
 
-	thread_exit();
+	thread_exit(&pcmdpriv->cmdthread_comp);
+	return 0;
 
 }
 
@@ -4026,9 +4031,10 @@ _func_enter_;
 
 	DBG_871X("%s: free cmd obj\n", __func__);
 	rtw_free_cmd_obj(pcmd);
-
+#ifdef SUPPLICANT_RTK_VERSION_LOWER_THAN_JB42
 	if (padapter->mlmepriv.not_indic_disco == _TRUE)
 		padapter->mlmepriv.not_indic_disco = _FALSE;
+#endif
 
 	rtw_ps_deny_cancel(padapter, PS_DENY_JOIN);
 

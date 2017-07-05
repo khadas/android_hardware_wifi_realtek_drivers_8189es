@@ -609,6 +609,8 @@ ODM_DMWatchdog(
 	
 	odm_RSSIMonitorCheck(pDM_Odm);
 
+	phydm_receiver_blocking(pDM_Odm);
+
 	if(*(pDM_Odm->pbPowerSaving) == TRUE)
 	{
 		odm_DIGbyRSSI_LPS(pDM_Odm);
@@ -2122,4 +2124,289 @@ phydm_NoisyDetection(
 	
 }
 
+VOID
+phydm_set_nbi_reg(
+	IN		PVOID		pDM_VOID,
+	IN		u4Byte		tone_idx_tmp,
+	IN		u4Byte		bw
+)
+{
+	PDM_ODM_T	pDM_Odm = (PDM_ODM_T)pDM_VOID;
+	u4Byte	nbi_table_128[NBI_TABLE_SIZE_128] = {25, 55, 85, 115, 135, 155, 185, 205, 225, 245,		/*1~10*/		/*tone_idx X 10*/
+												265, 285, 305, 335, 355, 375, 395, 415, 435, 455,	/*11~20*/
+												485, 505, 525, 555, 585, 615, 635};				/*21~27*/
+	
+	u4Byte	nbi_table_256[NBI_TABLE_SIZE_256] = { 25,   55,   85, 115, 135, 155, 175, 195, 225, 245,	/*1~10*/
+												265, 285, 305, 325, 345, 365, 385, 405, 425, 445,	/*11~20*/
+												465, 485, 505, 525, 545, 565, 585, 605, 625, 645,	/*21~30*/
+												665, 695, 715, 735, 755, 775, 795, 815, 835, 855,	/*31~40*/
+												875, 895, 915, 935, 955, 975, 995, 1015, 1035, 1055,	/*41~50*/
+												1085, 1105, 1125, 1145, 1175, 1195, 1225, 1255, 1275};	/*51~59*/
+
+	u4Byte	reg_idx = 0;
+	u4Byte	i;
+	u1Byte	nbi_table_idx = FFT_128_TYPE;
+
+	if (pDM_Odm->SupportICType & ODM_IC_11N_SERIES) {
+		
+		nbi_table_idx = FFT_128_TYPE;
+	} else if (pDM_Odm->SupportICType & ODM_IC_11AC_1_SERIES) {
+	
+		nbi_table_idx = FFT_256_TYPE;
+	} else if (pDM_Odm->SupportICType & ODM_IC_11AC_2_SERIES) {
+	
+		if (bw == 80)
+			nbi_table_idx = FFT_256_TYPE;
+		else /*20M, 40M*/
+			nbi_table_idx = FFT_128_TYPE;
+	}
+
+	if (nbi_table_idx == FFT_128_TYPE) {
+		
+		for (i = 0; i < NBI_TABLE_SIZE_128; i++) {
+			if (tone_idx_tmp < nbi_table_128[i]) {
+				reg_idx = i+1;
+				break;
+			}
+		}
+		
+	} else if (nbi_table_idx == FFT_256_TYPE) {
+
+		for (i = 0; i < NBI_TABLE_SIZE_256; i++) {
+			if (tone_idx_tmp < nbi_table_256[i]) {
+				reg_idx = i+1;
+				break;
+			}
+		}	
+	}
+
+	if (pDM_Odm->SupportICType & ODM_IC_11N_SERIES) {
+		ODM_SetBBReg(pDM_Odm, 0xc40, 0x1f000000, reg_idx);
+		ODM_RT_TRACE(pDM_Odm, PHYDM_COMP_ADAPTIVITY, ODM_DBG_LOUD, ("Set tone idx:  Reg0xC40[28:24] = ((0x%x))\n", reg_idx));
+		/**/
+	} else {
+		ODM_SetBBReg(pDM_Odm, 0x87c, 0xfc000, reg_idx);
+		ODM_RT_TRACE(pDM_Odm, PHYDM_COMP_ADAPTIVITY, ODM_DBG_LOUD, ("Set tone idx: Reg0x87C[19:14] = ((0x%x))\n", reg_idx));
+		/**/
+	}
+}
+
+u1Byte
+phydm_calculate_fc(
+	IN		PVOID		pDM_VOID,
+	IN		u4Byte		channel,
+	IN		u4Byte		bw,
+	IN		u4Byte		Second_ch,
+	IN OUT	u4Byte		*fc_in
+)
+{
+	PDM_ODM_T	pDM_Odm = (PDM_ODM_T)pDM_VOID;
+	u4Byte		fc = *fc_in;
+	u4Byte		start_ch_per_40m[NUM_START_CH_40M] = {36, 44, 52, 60, 100, 108, 116, 124, 132, 140, 149, 157, 165, 173};
+	u4Byte		start_ch_per_80m[NUM_START_CH_80M] = {36, 52, 100, 116, 132, 149, 165}; 
+	pu4Byte		p_start_ch = &(start_ch_per_40m[0]);
+	u4Byte		num_start_channel = NUM_START_CH_40M;
+	u4Byte		channel_offset = 0;
+	u4Byte		i;
+
+	/*2.4G*/
+	if (channel <= 14 && channel > 0) {
+
+		if (bw == 80) {
+			return	SET_ERROR;
+		}
+
+		fc = 2412 + (channel - 1)*5;
+
+		if (bw == 40 && (Second_ch == PHYDM_ABOVE)) {
+			
+			if (channel >= 10) {
+				ODM_RT_TRACE(pDM_Odm, PHYDM_COMP_ADAPTIVITY, ODM_DBG_LOUD, ("CH = ((%d)), Scnd_CH = ((%d)) Error Setting\n", channel, Second_ch));
+				return	SET_ERROR;
+			}
+			fc += 10;
+		} else if (bw == 40 && (Second_ch == PHYDM_BELOW)) {
+		
+			if (channel <= 2) {
+				ODM_RT_TRACE(pDM_Odm, PHYDM_COMP_ADAPTIVITY, ODM_DBG_LOUD, ("CH = ((%d)), Scnd_CH = ((%d)) Error Setting\n", channel, Second_ch));
+				return	SET_ERROR;
+			}
+			fc -= 10;
+		}
+	}
+	/*5G*/
+	else if (channel >= 36 && channel <= 177) {
+
+		if (bw != 20) {
+			
+			if (bw == 40) {
+				num_start_channel = NUM_START_CH_40M;
+				p_start_ch = &(start_ch_per_40m[0]);
+				channel_offset = CH_OFFSET_40M;
+			} else if (bw == 80) {
+				num_start_channel = NUM_START_CH_80M;
+				p_start_ch = &(start_ch_per_80m[0]);
+				channel_offset = CH_OFFSET_80M;
+			}
+
+			for (i = 0; i < (num_start_channel - 1); i++) {
+				
+				if (channel < p_start_ch[i+1]) {
+					channel = p_start_ch[i] + channel_offset;
+					break;
+				}
+			}
+			ODM_RT_TRACE(pDM_Odm, PHYDM_COMP_ADAPTIVITY, ODM_DBG_LOUD, ("Mod_CH = ((%d))\n", channel));
+		}
+		
+		fc = 5180 + (channel-36)*5;
+		
+	} else {
+		ODM_RT_TRACE(pDM_Odm, PHYDM_COMP_ADAPTIVITY, ODM_DBG_LOUD, ("CH = ((%d)) Error Setting\n", channel));
+		return	SET_ERROR;
+	}
+	
+	*fc_in = fc;
+	
+	return SET_SUCCESS;
+}
+
+u1Byte
+phydm_calculate_intf_distance(
+	IN		PVOID		pDM_VOID,
+	IN		u4Byte		bw,
+	IN		u4Byte		fc,
+	IN		u4Byte		f_interference,
+	IN OUT	u4Byte		*p_tone_idx_tmp_in
+)
+{
+	PDM_ODM_T	pDM_Odm = (PDM_ODM_T)pDM_VOID;
+	u4Byte		bw_up, bw_low;
+	u4Byte		int_distance;
+	u4Byte		tone_idx_tmp;
+	u1Byte		set_result = SET_NO_NEED;
+	
+	bw_up = fc + bw/2;
+	bw_low = fc - bw/2;
+
+	ODM_RT_TRACE(pDM_Odm, PHYDM_COMP_ADAPTIVITY, ODM_DBG_LOUD, ("[f_l, fc, fh] = [ %d, %d, %d ], f_int = ((%d))\n", bw_low, fc, bw_up, f_interference));
+
+	if ((f_interference >= bw_low) && (f_interference <= bw_up)) {
+
+		int_distance = (fc >= f_interference) ? (fc - f_interference) : (f_interference - fc);
+		tone_idx_tmp = (int_distance<<5);  /* =10*(int_distance /0.3125) */
+		ODM_RT_TRACE(pDM_Odm, PHYDM_COMP_ADAPTIVITY, ODM_DBG_LOUD, ("int_distance = ((%d MHz)) Mhz, tone_idx_tmp = ((%d.%d))\n", int_distance, (tone_idx_tmp/10), (tone_idx_tmp%10)));
+		*p_tone_idx_tmp_in = tone_idx_tmp;
+		set_result = SET_SUCCESS;
+	}
+
+	return	set_result;
+
+}
+
+VOID
+phydm_nbi_enable(
+	IN		PVOID		pDM_VOID,
+	IN		u4Byte		enable
+)
+{
+	PDM_ODM_T	pDM_Odm = (PDM_ODM_T)pDM_VOID;
+	u4Byte		reg_value = 0;
+
+	reg_value = (enable == NBI_ENABLE) ? 1 : 0;
+	
+	if (pDM_Odm->SupportICType & ODM_IC_11N_SERIES)
+		ODM_SetBBReg(pDM_Odm, 0xc40, BIT9, reg_value);
+	else if (pDM_Odm->SupportICType & ODM_IC_11AC_SERIES)
+		ODM_SetBBReg(pDM_Odm, 0x87c, BIT(13), reg_value);
+
+}
+
+u1Byte
+phydm_nbi_setting(
+	IN		PVOID		pDM_VOID,
+	IN		u4Byte		enable,
+	IN		u4Byte		channel,
+	IN		u4Byte		bw,
+	IN		u4Byte		f_interference,
+	IN		u4Byte		Second_ch
+)
+{
+	PDM_ODM_T	pDM_Odm = (PDM_ODM_T)pDM_VOID;
+	u4Byte		fc = 2412;		
+	u4Byte		tone_idx_tmp;
+	u1Byte		set_result = SET_SUCCESS;
+	
+	if (enable == NBI_DISABLE) 
+		set_result = SET_SUCCESS;
+	
+	else {
+
+		ODM_RT_TRACE(pDM_Odm, PHYDM_COMP_ADAPTIVITY, ODM_DBG_LOUD, ("[Set NBI] CH = ((%d)), BW = ((%d)), f_intf = ((%d)), Scnd_CH = ((%s))\n", 
+			channel, bw, f_interference, (((Second_ch == PHYDM_DONT_CARE) || (bw == 20) || (channel > 14)) ? "Don't care" : (Second_ch == PHYDM_ABOVE) ? "H" : "L")));			
+
+		/*calculate fc*/
+		if (phydm_calculate_fc(pDM_Odm, channel, bw, Second_ch, &fc) == SET_ERROR)
+			set_result = SET_ERROR;
+			
+		else {
+			/*calculate interference distance*/
+			if (phydm_calculate_intf_distance(pDM_Odm, bw, fc, f_interference, &tone_idx_tmp) == SET_SUCCESS) {
+				
+				phydm_set_nbi_reg(pDM_Odm, tone_idx_tmp, bw);
+				set_result = SET_SUCCESS;
+			} else
+				set_result = SET_NO_NEED;
+		}
+	}
+
+	if (set_result == SET_SUCCESS)
+		phydm_nbi_enable(pDM_Odm, enable);
+	else
+		phydm_nbi_enable(pDM_Odm, NBI_DISABLE);
+
+	return	set_result;
+}
+
+void
+phydm_receiver_blocking(
+	IN		PVOID		pDM_VOID
+)
+{
+	PDM_ODM_T	pDM_Odm = (PDM_ODM_T)pDM_VOID;
+	PADAPTER	Adapter = pDM_Odm->Adapter;
+	u4Byte	channel = *pDM_Odm->pChannel;
+	u1Byte	bw = *pDM_Odm->pBandWidth;
+	u1Byte	set_result = 0;
+	u4Byte	total_tp;
+
+	total_tp = Adapter->dvobj->traffic_stat.cur_tx_tp + Adapter->dvobj->traffic_stat.cur_rx_tp;
+
+	if (total_tp == 0)
+		pDM_Odm->consecutive_idlel_time = pDM_Odm->consecutive_idlel_time + PHYDM_WATCH_DOG_PERIOD;
+	else
+		pDM_Odm->consecutive_idlel_time = 0;
+
+	if (pDM_Odm->consecutive_idlel_time > 8 && pDM_Odm->mp_mode == false && pDM_Odm->Adaptivity_enable == true) {
+		if ((bw == ODM_BW20M) && (channel == 1)) { 
+			set_result = phydm_nbi_setting(pDM_Odm, NBI_ENABLE, channel, 20, 2410, PHYDM_DONT_CARE);
+			pDM_Odm->is_nbi_enable = true;
+		} else if ((bw == ODM_BW20M) && (channel == 13)) {
+			set_result = phydm_nbi_setting(pDM_Odm, NBI_ENABLE, channel, 20, 2473, PHYDM_DONT_CARE);
+			pDM_Odm->is_nbi_enable = true;
+		} else if ((!pDM_Odm->pbScanInProcess) && channel != 1 && channel != 13) {
+			phydm_nbi_enable(pDM_Odm, NBI_DISABLE);
+			ODM_SetBBReg(pDM_Odm, 0xc40, 0x1f000000, 0x1f);
+			pDM_Odm->is_nbi_enable = false;
+		}
+	} else {
+		if (pDM_Odm->is_nbi_enable) {
+			phydm_nbi_enable(pDM_Odm, NBI_DISABLE);
+			ODM_SetBBReg(pDM_Odm, 0xc40, 0x1f000000, 0x1f);
+			pDM_Odm->is_nbi_enable = false;
+		}
+	}
+	ODM_RT_TRACE(pDM_Odm, PHYDM_COMP_ADAPTIVITY, ODM_DBG_LOUD, 
+		("[NBI set result: %s]\n", (set_result == SET_SUCCESS ? "Success" : (set_result == SET_NO_NEED ? "No need" : "Error"))));
+}
 

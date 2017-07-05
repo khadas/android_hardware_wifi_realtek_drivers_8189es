@@ -85,6 +85,7 @@ static int rtw_drv_init(struct sdio_func *func, const struct sdio_device_id *id)
 static void rtw_dev_remove(struct sdio_func *func);
 static int rtw_sdio_resume(struct device *dev);
 static int rtw_sdio_suspend(struct device *dev);
+static void rtw_sdio_shutdown(struct device *dev);
 extern void rtw_dev_unload(PADAPTER padapter);
 
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,29)) 
@@ -106,6 +107,7 @@ static struct sdio_drv_priv sdio_drvpriv = {
 	.r871xs_drv.id_table = sdio_ids,
 	#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,29)) 
 	.r871xs_drv.drv = {
+		.shutdown = rtw_sdio_shutdown,
 		.pm = &rtw_sdio_pm_ops,
 	}
 	#endif
@@ -488,11 +490,6 @@ static void sd_intf_stop(PADAPTER padapter)
 	rtw_hal_disable_interrupt(padapter);
 }
 
-
-#ifdef RTW_SUPPORT_PLATFORM_SHUTDOWN
-PADAPTER g_test_adapter = NULL;
-#endif // RTW_SUPPORT_PLATFORM_SHUTDOWN
-
 _adapter *rtw_sdio_if1_init(struct dvobj_priv *dvobj)
 {
 	int status = _FAIL;
@@ -505,9 +502,6 @@ _adapter *rtw_sdio_if1_init(struct dvobj_priv *dvobj)
 	if (loadparam(padapter) != _SUCCESS)
 		goto free_adapter;
 
-#ifdef RTW_SUPPORT_PLATFORM_SHUTDOWN
-	g_test_adapter = padapter;
-#endif // RTW_SUPPORT_PLATFORM_SHUTDOWN
 	padapter->dvobj = dvobj;
 
 	rtw_set_drv_stopped(padapter);/*init*/
@@ -645,10 +639,6 @@ static void rtw_sdio_if1_deinit(_adapter *if1)
 	DBG_871X("wlan link down\n");
 	rtd2885_wlan_netlink_sendMsg("linkdown", "8712");
 #endif
-
-#ifdef RTW_SUPPORT_PLATFORM_SHUTDOWN
-	g_test_adapter = NULL;
-#endif // RTW_SUPPORT_PLATFORM_SHUTDOWN
 }
 
 /*
@@ -843,6 +833,18 @@ _func_enter_;
 
 _func_exit_;
 }
+
+static void rtw_sdio_shutdown(struct device *dev)
+{
+	struct sdio_func *func = dev_to_sdio_func(dev);
+	struct dvobj_priv *psdpriv = sdio_get_drvdata(func);
+	_adapter *padapter = psdpriv->padapters[IFACE_ID0];
+
+	DBG_871X("%s: enter\n", __func__);
+
+	rtw_dev_remove(func);
+}
+
 extern int pm_netdev_open(struct net_device *pnetdev,u8 bnormal);
 extern int pm_netdev_close(struct net_device *pnetdev,u8 bnormal);
 

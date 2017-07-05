@@ -1176,7 +1176,7 @@ u32 rtw_start_drv_threads(_adapter *padapter)
 	        if(IS_ERR(padapter->cmdThread))
 			_status = _FAIL;
 		else
-			_rtw_down_sema(&padapter->cmdpriv.terminate_cmdthread_sema); //wait for cmd_thread to run
+			_rtw_down_sema(&padapter->cmdpriv.start_cmdthread_sema); //wait for cmd_thread to run
 	}
 
 
@@ -1212,8 +1212,12 @@ void rtw_stop_drv_threads (_adapter *padapter)
 	if (is_primary_adapter(padapter))
 #endif  /*SDIO_HCI */
 	{
-		_rtw_up_sema(&padapter->xmitpriv.xmit_sema);
-		_rtw_down_sema(&padapter->xmitpriv.terminate_xmitthread_sema);
+		if (padapter->xmitpriv.stop_req == 0) {
+			_rtw_up_sema(&padapter->xmitpriv.xmit_sema);
+			/*_rtw_down_sema(&padapter->xmitpriv.terminate_xmitthread_sema);*/
+			rtw_wait_for_thread_stop(&padapter->xmitpriv.xmitthread_comp);
+			padapter->xmitpriv.stop_req = 1;
+		}
 	}
 	RT_TRACE(_module_os_intfs_c_, _drv_info_, ("\n drv_halt: rtw_xmit_thread can be terminated !\n"));
 #endif
@@ -1221,7 +1225,8 @@ void rtw_stop_drv_threads (_adapter *padapter)
 #ifdef CONFIG_RECV_THREAD_MODE
 	// Below is to termindate rx_thread...
 	_rtw_up_sema(&padapter->recvpriv.recv_sema);
-	_rtw_down_sema(&padapter->recvpriv.terminate_recvthread_sema);
+	/*_rtw_down_sema(&padapter->recvpriv.terminate_recvthread_sema);*/
+	rtw_wait_for_thread_stop(&padapter->recvpriv.recvthread_comp);
 	RT_TRACE(_module_os_intfs_c_,_drv_info_,("\n drv_halt:recv_thread can be terminated! \n"));
 #endif
 
@@ -2788,7 +2793,7 @@ static int netdev_close(struct net_device *pnetdev)
 #ifndef CONFIG_ANDROID
 		//s2.
 		LeaveAllPowerSaveMode(padapter);
-		rtw_disassoc_cmd(padapter, 500, _FALSE);
+		rtw_disassoc_cmd(padapter, 100, _FALSE);
 		//s2-2.  indicate disconnect to os
 		rtw_indicate_disconnect(padapter);
 		//s2-3.

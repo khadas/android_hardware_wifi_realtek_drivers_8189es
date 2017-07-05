@@ -74,6 +74,7 @@
 	#define Rtl8188E_NIC_LPS_ENTER_FLOW			rtl8188E_enter_lps_flow
 	#define Rtl8188E_NIC_LPS_LEAVE_FLOW			rtl8188E_leave_lps_flow
 
+#define TBTT_PROBIHIT_HOLD_TIME 0x80
 
 #if 1 // download firmware related data structure
 #define MAX_FW_8188E_SIZE			0x8000 //32768,32k / 16384,16k

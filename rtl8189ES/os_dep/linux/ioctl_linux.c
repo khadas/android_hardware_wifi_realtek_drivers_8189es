@@ -12906,9 +12906,7 @@ thread_return lbk_thread(thread_context context)
 		freeloopbackpkt(padapter, pxmitframe);
 		pxmitframe = NULL;
 
-		if (signal_pending(current)) {
-			flush_signals(current);
-		}
+		flush_signals(current);
 
 		if ((ploopback->bstop == _TRUE) ||
 			((ploopback->cnt != 0) && (ploopback->cnt == cnt)))
@@ -12926,7 +12924,8 @@ thread_return lbk_thread(thread_context context)
 
 	ploopback->bstop = _TRUE;
 
-	thread_exit();
+	thread_exit(NULL);
+	return 0;
 }
 
 static void loopbackTest(PADAPTER padapter, u32 cnt, u32 size, u8* pmsg)

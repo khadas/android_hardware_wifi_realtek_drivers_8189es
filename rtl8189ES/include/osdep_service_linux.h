@@ -134,7 +134,7 @@
 	typedef struct semaphore	_mutex;
 #endif
 	typedef struct timer_list _timer;
-
+	typedef struct completion _completion;
 	struct	__queue	{
 		struct	list_head	queue;	
 		_lock	lock;
@@ -153,8 +153,6 @@
 	typedef void*		_thread_hdl_;
 	typedef int		thread_return;
 	typedef void*	thread_context;
-
-	#define thread_exit() complete_and_exit(NULL, 0)
 
 	typedef void timer_hdl_return;
 	typedef void* timer_hdl_context;

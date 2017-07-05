@@ -77,7 +77,8 @@ _func_enter_;
 	_rtw_spinlock_init(&pxmitpriv->lock);
 	_rtw_spinlock_init(&pxmitpriv->lock_sctx);
 	_rtw_init_sema(&pxmitpriv->xmit_sema, 0);
-	_rtw_init_sema(&pxmitpriv->terminate_xmitthread_sema, 0);
+	/*_rtw_init_sema(&pxmitpriv->terminate_xmitthread_sema, 0);*/
+	_rtw_init_completion(&pxmitpriv->xmitthread_comp);
 
 	/* 
 	Please insert all the queue initializaiton using _rtw_init_queue below
@@ -339,7 +340,7 @@ void  rtw_mfree_xmit_priv_lock (struct xmit_priv *pxmitpriv)
 {
 	_rtw_spinlock_free(&pxmitpriv->lock);
 	_rtw_free_sema(&pxmitpriv->xmit_sema);
-	_rtw_free_sema(&pxmitpriv->terminate_xmitthread_sema);
+	/* _rtw_free_sema(&pxmitpriv->terminate_xmitthread_sema); */
 
 	_rtw_spinlock_free(&pxmitpriv->be_pending.lock);
 	_rtw_spinlock_free(&pxmitpriv->bk_pending.lock);
@@ -2648,6 +2649,9 @@ struct xmit_frame *__rtw_alloc_cmdxmitframe(struct xmit_priv *pxmitpriv,
 	pcmdframe->pxmitbuf = pxmitbuf;
 
 	pcmdframe->buf_addr = pxmitbuf->pbuf;
+	
+	/* initial memory to zero */
+	_rtw_memset(pcmdframe->buf_addr, 0, MAX_CMDBUF_SZ);
 
 	pxmitbuf->priv_data = pcmdframe;
 
@@ -4724,15 +4728,18 @@ thread_return rtw_xmit_thread(thread_context context)
 	padapter = (PADAPTER)context;
 
 	thread_enter("RTW_XMIT_THREAD");
+	padapter->xmitpriv.stop_req = 0;
 
 	do {
 		err = rtw_hal_xmit_thread_handler(padapter);
 		flush_signals_thread();
 	} while (_SUCCESS == err);
 
-	_rtw_up_sema(&padapter->xmitpriv.terminate_xmitthread_sema);
+	DBG_871X("%s: exit...\n", __func__);
 
-	thread_exit();
+	/*_rtw_up_sema(&padapter->xmitpriv.terminate_xmitthread_sema);*/
+	thread_exit(&padapter->xmitpriv.xmitthread_comp);
+	return 0;
 }
 #endif
 

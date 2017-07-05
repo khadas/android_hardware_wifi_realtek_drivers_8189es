@@ -31,7 +31,6 @@
 #define STATION_INFO_ASSOC_REQ_IES	0
 #endif /* Linux kernel >= 4.0.0 */
 
-
 #include <rtw_wifi_regd.h>
 
 #define RTW_MAX_MGMT_TX_CNT (8)
@@ -862,8 +861,11 @@ void rtw_cfg80211_indicate_disconnect(_adapter *padapter)
 		}
 	}
 #endif //CONFIG_P2P
-
+#ifdef SUPPLICANT_RTK_VERSION_LOWER_THAN_JB42
 	if (!padapter->mlmepriv.not_indic_disco || padapter->ndev_unregistering) {
+#else
+	{
+#endif
 		#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 11, 0) || defined(COMPAT_KERNEL_RELEASE)			
 		DBG_8192C("pwdev->sme_state(b)=%d\n", pwdev->sme_state);
 
@@ -3078,9 +3080,9 @@ static int cfg80211_rtw_leave_ibss(struct wiphy *wiphy, struct net_device *ndev)
 	int ret = 0;
 
 	DBG_871X(FUNC_NDEV_FMT"\n", FUNC_NDEV_ARG(ndev));
-
+#ifdef SUPPLICANT_RTK_VERSION_LOWER_THAN_JB42
 	padapter->mlmepriv.not_indic_disco = _TRUE;
-	
+#endif
 	old_type = rtw_wdev->iftype;
 	
 	rtw_set_to_roam(padapter, 0);
@@ -3102,7 +3104,9 @@ static int cfg80211_rtw_leave_ibss(struct wiphy *wiphy, struct net_device *ndev)
 	}
 
 leave_ibss:
+	#ifdef SUPPLICANT_RTK_VERSION_LOWER_THAN_JB42
 	padapter->mlmepriv.not_indic_disco = _FALSE;
+	#endif
 
 	return 0;
 }
@@ -3117,7 +3121,9 @@ static int cfg80211_rtw_connect(struct wiphy *wiphy, struct net_device *ndev,
 
 #if 1
 	DBG_871X("%s: =======>\n", __func__);
+#ifdef SUPPLICANT_RTK_VERSION_LOWER_THAN_JB42
 	padapter->mlmepriv.not_indic_disco = _TRUE;
+#endif
 
 	if(adapter_wdev_data(padapter)->block == _TRUE)
 	{
@@ -3199,8 +3205,10 @@ static int cfg80211_rtw_connect(struct wiphy *wiphy, struct net_device *ndev,
 
 	rtw_start_connect_cmd(padapter, param);
 exit:
+	#ifdef SUPPLICANT_RTK_VERSION_LOWER_THAN_JB42
 	if (ret < 0)
 		padapter->mlmepriv.not_indic_disco = _FALSE;
+	#endif
 #else
 	_irqL irqL;	
 	_list *phead;	
@@ -3457,8 +3465,9 @@ static int cfg80211_rtw_disconnect(struct wiphy *wiphy, struct net_device *ndev,
 	_adapter *padapter = (_adapter *)rtw_netdev_priv(ndev);
 
 	DBG_871X(FUNC_NDEV_FMT" - Start to Disconnect\n", FUNC_NDEV_ARG(ndev));
-
+#ifdef SUPPLICANT_RTK_VERSION_LOWER_THAN_JB42
 	padapter->mlmepriv.not_indic_disco = _TRUE;
+#endif
 
 	rtw_set_to_roam(padapter, 0);
 
@@ -3475,9 +3484,9 @@ static int cfg80211_rtw_disconnect(struct wiphy *wiphy, struct net_device *ndev,
 		rtw_free_assoc_resources(padapter, 1);
 		rtw_pwr_wakeup(padapter);		
 	}
-
+#ifdef SUPPLICANT_RTK_VERSION_LOWER_THAN_JB42
 	padapter->mlmepriv.not_indic_disco = _FALSE;
-
+#endif
 	DBG_871X(FUNC_NDEV_FMT" return 0\n", FUNC_NDEV_ARG(ndev));
 	return 0;
 }

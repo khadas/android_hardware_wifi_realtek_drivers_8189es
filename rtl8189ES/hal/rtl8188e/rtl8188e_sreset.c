@@ -33,8 +33,10 @@ void rtl8188e_sreset_xmit_status_check(_adapter *padapter)
 	struct xmit_priv	*pxmitpriv = &padapter->xmitpriv;
 	unsigned int diff_time;
 	u32 txdma_status;
+
+	txdma_status=rtw_read32(padapter, REG_TXDMA_STATUS);
 	
-	if( (txdma_status=rtw_read32(padapter, REG_TXDMA_STATUS)) !=0x00){
+	if(txdma_status != 0x00 && txdma_status != 0xeaeaeaea){
 		DBG_871X("%s REG_TXDMA_STATUS:0x%08x\n", __FUNCTION__, txdma_status);	
 		rtw_hal_sreset_reset(padapter);
 	}

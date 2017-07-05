@@ -1275,7 +1275,8 @@ exit:
 	pmptx->pallocated_buf = NULL;
 	pmptx->stop = 1;
 
-	thread_exit();
+	thread_exit(NULL);
+	return 0;
 }
 
 void fill_txdesc_for_mp(PADAPTER padapter, u8 *ptxdesc)

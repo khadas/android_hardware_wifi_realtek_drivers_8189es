@@ -1624,17 +1624,20 @@ phy_SpurCalibration_8188E(
 	)
 {
 	HAL_DATA_TYPE	*pHalData = GET_HAL_DATA(Adapter);
+	PDM_ODM_T		pDM_Odm = &pHalData->odmpriv;
 	
 	//DbgPrint("===> phy_SpurCalibration_8188E  CurrentChannelBW = %d, CurrentChannel = %d\n", pHalData->CurrentChannelBW, pHalData->CurrentChannel);
 	if(pHalData->CurrentChannelBW == CHANNEL_WIDTH_20 &&( pHalData->CurrentChannel == 13 || pHalData->CurrentChannel == 14)){
 		PHY_SetBBReg(Adapter, rOFDM0_RxDSP, BIT(9), 0x1);                     	//enable notch filter
 		PHY_SetBBReg(Adapter, rOFDM1_IntfDet, BIT(8)|BIT(7)|BIT(6), 0x2);	//intf_TH
-	}
-	else if(pHalData->CurrentChannelBW == CHANNEL_WIDTH_40 && pHalData->CurrentChannel == 11){
+		PHY_SetBBReg(Adapter, rOFDM0_RxDSP, BIT(28) | BIT(27) | BIT(26) |BIT(25) | BIT (24), 0x1f);
+		pDM_Odm->is_nbi_enable = false;
+	} else if(pHalData->CurrentChannelBW == CHANNEL_WIDTH_40 && pHalData->CurrentChannel == 11){
 		PHY_SetBBReg(Adapter, rOFDM0_RxDSP, BIT(9), 0x1);                     	//enable notch filter
 		PHY_SetBBReg(Adapter, rOFDM1_IntfDet, BIT(8)|BIT(7)|BIT(6), 0x2);	//intf_TH
-	}
-	else{
+		PHY_SetBBReg(Adapter, rOFDM0_RxDSP, BIT(28) | BIT(27) | BIT(26) |BIT(25) | BIT (24), 0x1f);
+		pDM_Odm->is_nbi_enable = false;
+	} else {
 		if(Adapter->registrypriv.notch_filter == 0)
 			PHY_SetBBReg(Adapter, rOFDM0_RxDSP, BIT(9), 0x0);	//disable notch filter
 	}

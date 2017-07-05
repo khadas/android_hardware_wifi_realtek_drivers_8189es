@@ -43,7 +43,7 @@ CONFIG_SDIO_HCI = y
 CONFIG_GSPI_HCI = n
 ########################## Features ###########################
 CONFIG_MP_INCLUDED = y
-CONFIG_POWER_SAVING = n
+CONFIG_POWER_SAVING = y
 CONFIG_USB_AUTOSUSPEND = n
 CONFIG_HW_PWRP_DETECTION = n
 CONFIG_WIFI_TEST = n
@@ -1006,8 +1006,8 @@ EXTRA_CFLAGS += -DCONFIG_P2P_IPS -DCONFIG_PLATFORM_ANDROID
 EXTRA_CFLAGS += -DCONFIG_RADIO_WORK
 EXTRA_CFLAGS += -DRTW_VENDOR_EXT_SUPPORT
 ARCH := arm
-CROSS_COMPILE := /mnt/newdisk/isaac/nvidia/android_ara_5.1/prebuilts/gcc/linux-x86/arm/arm-eabi-4.8/bin/arm-eabi-
-KSRC :=/mnt/newdisk/isaac/nvidia/android_ara_5.1/out/target/product/jetson/obj/kernel/
+CROSS_COMPILE := /media/isaac/data/nvidia_tk1/android_L/prebuilts/gcc/linux-x86/arm/arm-eabi-4.8/bin/arm-eabi-
+KSRC :=/media/isaac/data/nvidia_tk1/android_L/out/target/product/shieldtablet/obj/KERNEL/
 MODULE_NAME = wlan
 endif
 
@@ -1230,7 +1230,6 @@ EXTRA_CFLAGS += -DCONFIG_IOCTL_CFG80211 -DRTW_USE_CFG80211_STA_EVENT
 EXTRA_CFLAGS += -DCONFIG_CONCURRENT_MODE
 # default setting for Power control
 EXTRA_CFLAGS += -DRTW_ENABLE_WIFI_CONTROL_FUNC
-EXTRA_CFLAGS += -DRTW_SUPPORT_PLATFORM_SHUTDOWN
 # default setting for Special function
 EXTRA_CFLAGS += -DCONFIG_P2P_IPS
 ARCH := arm
@@ -1246,9 +1245,6 @@ EXTRA_CFLAGS += -DCONFIG_LITTLE_ENDIAN
 EXTRA_CFLAGS += -DCONFIG_CONCURRENT_MODE
 EXTRA_CFLAGS += -DCONFIG_IOCTL_CFG80211
 EXTRA_CFLAGS += -DCONFIG_P2P_IPS
-ifeq ($(CONFIG_SDIO_HCI), y)
-EXTRA_CFLAGS += -DRTW_SUPPORT_PLATFORM_SHUTDOWN
-endif
 EXTRA_CFLAGS += -fno-pic
 ARCH := arm
 CROSS_COMPILE := /home/android_sdk/Rockchip/rk3066_20130607/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.6/bin/arm-linux-androideabi-

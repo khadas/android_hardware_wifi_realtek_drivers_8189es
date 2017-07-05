@@ -2797,7 +2797,8 @@ void rtl8188e_stop_thread(_adapter *padapter)
 	// stop xmit_buf_thread
 	if (xmitpriv->SdioXmitThread ) {
 		_rtw_up_sema(&xmitpriv->SdioXmitSema);
-		_rtw_down_sema(&xmitpriv->SdioXmitTerminateSema);
+		/*_rtw_down_sema(&xmitpriv->SdioXmitTerminateSema);*/
+		rtw_wait_for_thread_stop(&xmitpriv->sdio_xmit_thread_comp);
 		xmitpriv->SdioXmitThread = 0;
 	}
 #endif
@@ -3773,10 +3774,10 @@ void ResumeTxBeacon(PADAPTER padapter)
 	RT_TRACE(_module_hci_hal_init_c_, _drv_info_, ("+ResumeTxBeacon\n"));
 
 	rtw_write8(padapter, REG_FWHW_TXQ_CTRL+2, (pHalData->RegFwHwTxQCtrl) | BIT6);
-	pHalData->RegFwHwTxQCtrl |= BIT6;
-	rtw_write8(padapter, REG_TBTT_PROHIBIT+1, 0xff);
-	pHalData->RegReg542 |= BIT0;
-	rtw_write8(padapter, REG_TBTT_PROHIBIT+2, pHalData->RegReg542);
+	/*TBTT hold time :4ms */
+	rtw_write16(padapter, REG_TBTT_PROHIBIT + 1,
+		(rtw_read16(padapter, REG_TBTT_PROHIBIT + 1) & (~0xFFF)) | (TBTT_PROBIHIT_HOLD_TIME));
+
 }
 
 void StopTxBeacon(PADAPTER padapter)
@@ -3791,10 +3792,8 @@ void StopTxBeacon(PADAPTER padapter)
 	rtw_write8(padapter, REG_FWHW_TXQ_CTRL+2, (pHalData->RegFwHwTxQCtrl) & (~BIT6));
 	pHalData->RegFwHwTxQCtrl &= (~BIT6);
 	rtw_write8(padapter, REG_TBTT_PROHIBIT+1, 0x64);
-	pHalData->RegReg542 &= ~(BIT0);
-	rtw_write8(padapter, REG_TBTT_PROHIBIT+2, pHalData->RegReg542);
 
-	CheckFwRsvdPageContent(padapter);  // 2010.06.23. Added by tynli.
+	/*CheckFwRsvdPageContent(padapter);  // 2010.06.23. Added by tynli.*/
 }
 
 static void hw_var_set_monitor(PADAPTER Adapter, u8 variable, u8 *val)
@@ -3963,9 +3962,9 @@ static void hw_var_set_opmode(PADAPTER Adapter, u8 variable, u8* val)
 			rtw_write8(Adapter, REG_BCNDMATIM, 0x02); // 2ms		
 			rtw_write8(Adapter, REG_DRVERLYINT, 0x05);// 5ms
 			//rtw_write8(Adapter, REG_BCN_MAX_ERR, 0xFF);
-			rtw_write8(Adapter, REG_ATIMWND_1, 0x0a); // 10ms for port1
+			rtw_write8(Adapter, REG_ATIMWND_1, 0x0c); // 13 ms for port1
 			rtw_write16(Adapter, REG_BCNTCFG, 0x00);
-			rtw_write16(Adapter, REG_TBTT_PROHIBIT, 0xff04);
+			rtw_write16(Adapter, REG_TBTT_PROHIBIT, 0x8004);
 			rtw_write16(Adapter, REG_TSFTR_SYN_OFFSET, 0x7fff);// +32767 (~32ms)
 	
 			//reset TSF2	
@@ -4096,9 +4095,9 @@ static void hw_var_set_opmode(PADAPTER Adapter, u8 variable, u8* val)
 			rtw_write8(Adapter, REG_BCNDMATIM, 0x02); // 2ms			
 			rtw_write8(Adapter, REG_DRVERLYINT, 0x05);// 5ms
 			//rtw_write8(Adapter, REG_BCN_MAX_ERR, 0xFF);
-			rtw_write8(Adapter, REG_ATIMWND, 0x0a); // 10ms
+			rtw_write8(Adapter, REG_ATIMWND, 0x0c); // 13ms
 			rtw_write16(Adapter, REG_BCNTCFG, 0x00);
-			rtw_write16(Adapter, REG_TBTT_PROHIBIT, 0xff04);
+			rtw_write16(Adapter, REG_TBTT_PROHIBIT, 0x8004);
 			rtw_write16(Adapter, REG_TSFTR_SYN_OFFSET, 0x7fff);// +32767 (~32ms)
 
 			//reset TSF

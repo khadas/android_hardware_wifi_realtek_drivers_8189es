@@ -92,7 +92,28 @@
 #define	NONE			0
 
 
+/*NBI API------------------------------------*/
+#define	NBI_ENABLE 1
+#define	NBI_DISABLE 2
 
+#define	NBI_TABLE_SIZE_128	27
+#define	NBI_TABLE_SIZE_256	59
+
+#define	NUM_START_CH_80M	7
+#define	NUM_START_CH_40M	14
+
+#define	CH_OFFSET_40M		2
+#define	CH_OFFSET_80M		6
+/*------------------------------------------------*/
+
+#define	SET_SUCCESS	1
+#define	SET_ERROR		2
+#define	SET_NO_NEED	3
+
+#define	FFT_128_TYPE	1
+#define	FFT_256_TYPE	2
+
+#define PHYDM_WATCH_DOG_PERIOD	2
 
 //8723A High Power IGI Setting
 #define		DM_DIG_HIGH_PWR_IGI_LOWER_BOUND	0x22
@@ -655,6 +676,7 @@ typedef  struct DM_Out_Source_Dynamic_Mechanism_Structure
 	u1Byte			odm_Regulation2_4G;
 	u1Byte			odm_Regulation5G;
 	u1Byte			IQKFWOffload;
+	u8				is_nbi_enable;
 //-----------HOOK BEFORE REG INIT-----------//	
 
 	//
@@ -785,7 +807,7 @@ typedef  struct DM_Out_Source_Dynamic_Mechanism_Structure
 	u1Byte			dm_dig_max_TH;
 	u1Byte 			dm_dig_min_TH;
 	u1Byte 			print_agc;
-
+	u1Byte			consecutive_idlel_time;	/*unit: second*/
 	//For Adaptivtiy
 	u2Byte			NHM_cnt_0;
 	u2Byte			NHM_cnt_1;
@@ -1410,6 +1432,10 @@ void odm_dtc(PDM_ODM_T pDM_Odm);
 
 VOID phydm_NoisyDetection(IN	PDM_ODM_T	pDM_Odm	);
 
+void
+phydm_receiver_blocking(
+	IN		PVOID		pDM_VOID
+);
 
 #endif
 

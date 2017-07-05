@@ -618,6 +618,7 @@ free_xmitbuf:
  */
 s32 rtl8188es_xmit_buf_handler(PADAPTER padapter)
 {
+	struct dvobj_priv *psdpriv = padapter->dvobj;
 	struct xmit_priv *pxmitpriv;
 	u8	queue_empty, queue_pending;
 	s32	ret;
@@ -657,14 +658,17 @@ s32 rtl8188es_xmit_buf_handler(PADAPTER padapter)
 #endif
 
 	do {
+		if (psdpriv->processing_dev_remove == _TRUE)
+			break;
+
 		queue_empty = rtl8188es_dequeue_writeport(padapter);
-//	dump secondary adapter xmitbuf 
+//	dump secondary adapter xmitbuf
 #ifdef CONFIG_CONCURRENT_MODE
 		if(rtw_buddy_adapter_up(padapter))
 			queue_empty &= rtl8188es_dequeue_writeport(padapter->pbuddy_adapter);
 #endif
 
-	} while ( !queue_empty);
+	} while (!queue_empty);
 
 #ifdef CONFIG_LPS_LCLK
 	rtw_unregister_tx_alive(padapter);
@@ -1365,9 +1369,9 @@ next:
 thread_return rtl8188es_xmit_thread(thread_context context)
 {
 	s32 ret;
-	PADAPTER padapter= (PADAPTER)context;	
+	PADAPTER padapter= (PADAPTER)context;
 	struct xmit_priv *pxmitpriv= &padapter->xmitpriv;
-	
+
 	ret = _SUCCESS;
 
 	thread_enter("RTWHALXT");
@@ -1376,17 +1380,15 @@ thread_return rtl8188es_xmit_thread(thread_context context)
 
 	do {
 		ret = rtl8188es_xmit_handler(padapter);
-		if (signal_pending(current)) {
-			flush_signals(current);
-		}
+		flush_signals(current);
 	} while (_SUCCESS == ret);
-
-	_rtw_up_sema(&pxmitpriv->SdioXmitTerminateSema);
 
 	RT_TRACE(_module_hal_xmit_c_, _drv_notice_, ("-%s\n", __FUNCTION__));
 	DBG_871X("exit %s\n", __FUNCTION__);
 
-	thread_exit();
+	/*_rtw_up_sema(&pxmitpriv->SdioXmitTerminateSema);*/
+	thread_exit(&pxmitpriv->sdio_xmit_thread_comp);
+	return 0;
 }
 #endif
 
@@ -1534,7 +1536,8 @@ s32 rtl8188es_init_xmit_priv(PADAPTER padapter)
 #else //CONFIG_SDIO_TX_TASKLET
 
 	_rtw_init_sema(&pxmitpriv->SdioXmitSema, 0);
-	_rtw_init_sema(&pxmitpriv->SdioXmitTerminateSema, 0);
+	/*_rtw_init_sema(&pxmitpriv->SdioXmitTerminateSema, 0);*/
+	_rtw_init_completion(&pxmitpriv->sdio_xmit_thread_comp);
 #endif //CONFIG_SDIO_TX_TASKLET
 
 	_rtw_spinlock_init(&pHalData->SdioTxFIFOFreePageLock);

@@ -646,7 +646,8 @@ struct	xmit_priv	{
 	_lock	lock;
 
 	_sema	xmit_sema;
-	_sema	terminate_xmitthread_sema;
+	/*_sema	terminate_xmitthread_sema;*/
+	_completion xmitthread_comp;
 
 	//_queue	blk_strms[MAX_NUMBLKS];
 	_queue	be_pending;
@@ -736,7 +737,8 @@ struct	xmit_priv	{
 #else
 	_thread_hdl_	SdioXmitThread;
 	_sema		SdioXmitSema;
-	_sema		SdioXmitTerminateSema;
+	/*_sema		SdioXmitTerminateSema;*/
+	_completion	sdio_xmit_thread_comp;
 #endif /* CONFIG_SDIO_TX_TASKLET */
 #endif /* CONFIG_SDIO_HCI */
 
@@ -772,6 +774,7 @@ struct	xmit_priv	{
 	u8 seq_no;
 #endif
 	_lock lock_sctx;
+	u8 stop_req;
 };
 
 extern struct xmit_frame *__rtw_alloc_cmdxmitframe(struct xmit_priv *pxmitpriv,

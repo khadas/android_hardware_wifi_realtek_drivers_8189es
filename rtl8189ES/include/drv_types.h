@@ -90,7 +90,6 @@ typedef struct _ADAPTER _adapter, ADAPTER,*PADAPTER;
 #define IEEE80211_BAND_5GHZ NL80211_BAND_5GHZ
 #define IEEE80211_NUM_BANDS NUM_NL80211_BANDS
 #endif
-
 #ifdef CONFIG_BEAMFORMING
 #include <rtw_beamforming.h>
 #endif
